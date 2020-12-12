@@ -30,19 +30,55 @@ Weeks 7, 8 and 9 are the core of the class. We have a question. We have some dat
 
 * `att_chg` as a function of `gender`
 
+```{r}
+stan_glm(att_chg ~ gender - 1, data = week_8, refresh = 0)
+```
+
+This just means females on average, after being exposed to Spanish speakers, display more conservative attitudes (increase of 0.1 vs. decrease by 0.2). This is predictive -- there's no way we change independently manipulate gender to see causality or randomly assign it. 
 
 * `att_chg` as a function of `liberal`
+```{r}
+stan_glm(att_chg ~ liberal - 1, data = week_8, refresh = 0)
+```
+
+Non-liberals have a larger change / improvement in attitudes towards immigration policy (i.e. more in favor by 0.1 in average), whereas liberals display no median improvement. This is predictive -- we can't randomly assign / manipulate liberalism. Note that for this nad the previous we aren't disaggregating by treatment.
 
 
 * `att_chg` as a function of `treatment`
+```{r}
+stan_glm(att_chg ~ treatment - 1, data = week_8, refresh = 0)
 
+```
 
+Treated people on balance have a larger conservative shift in immigration attitudes, whereas non-treated people have an increase in support by 0.4. This is causal -- we literally manipulated treatments in the study.
 
 
 
 ## Scene 2
 
 **Prompt:** For the model with `att_chg` as a function of `treatment`, create posterior probability densities for the two important parameters. Write a paragraph interpreting the meaning of those posteriors. 
+```{r}
+fit_treat <- stan_glm(att_chg ~ treatment - 1, data = week_8, refresh = 0) %>%
+  as_tibble() %>%
+  select(-sigma)
+
+fit_treat %>%
+  pivot_longer(cols = c("treatmentTreated", "treatmentControl"), names_to = "treatment",
+               values_to = "change") %>%
+  ggplot(aes(x = change, fill = treatment)) +  geom_histogram(alpha = 0.5,
+                                                              bins = 50, color = "white")
+# newobs <- tibble(treatment = "Treated")
+# 
+# pp <- posterior_predict(stan_glm(att_chg ~ treatment - 1, 
+#                                  data = week_8, refresh = 0), 
+#                         newobs) %>%
+#   as_tibble() %>%
+#   mutate(across(everything(), as.numeric))
+# 
+# pp %>%
+#   ggplot(aes(x = pp$'1', y = after_stat(count/sum(count)))) + geom_histogram()
+
+```
 
 
 
@@ -50,6 +86,22 @@ Weeks 7, 8 and 9 are the core of the class. We have a question. We have some dat
 ## Scene 3
 
 **Prompt:** Create a plot of the the posterior for the average treatment effect. Write a paragraph interpreting the plot.
+```{r}
+newobs <- tibble(treatment = "Treated")
+
+pp <- posterior_predict(stan_glm(att_chg ~ treatment - 1,
+                                 data = week_8, refresh = 0),
+                        newdata = newobs) %>%
+  as_tibble() %>%
+  mutate(across(everything(), as.numeric))
+
+pp %>%
+  ggplot(aes(x = `1`, y = after_stat(count/sum(count)))) + 
+    geom_histogram(color = "white", bins = 50)
+
+
+```
+
 
 
 
